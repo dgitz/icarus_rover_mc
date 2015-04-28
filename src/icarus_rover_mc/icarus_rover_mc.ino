@@ -20,7 +20,7 @@
 #define PRIORITY_SLOW 2
 
 //Communications Definitions
-#define BAUD_RATE 9600
+#define BAUD_RATE 115200
 
 //Timing Stuff declarations
 int ontime = 0;
@@ -31,11 +31,13 @@ int priority_level = -1;
 
 //Communication declarations
 String in_message;
-int in_message_complete = 0;
+int in_message_completed = 0;
+int in_message_started = 0;
 int temp = 0;
 void setup()
 {
   Serial.begin(BAUD_RATE);
+  Serial2.begin(BAUD_RATE);
   pinMode(A_LED_PIN,OUTPUT);
   pinMode(B_LED_PIN,OUTPUT);
   pinMode(C_LED_PIN,OUTPUT);
@@ -48,10 +50,20 @@ void loop()
 {
   
   delay(1);
+  digitalWrite(C_LED_PIN, !digitalRead(C_LED_PIN));
+  if (in_message_completed == 1)
+  {
+        Serial.println(in_message);
+        Serial2.println(in_message);
+        in_message = "";
+        in_message_completed = 0;
+        in_message_started = 0;
+   }
+  /*
   //digitalWrite(A_LED_PIN, !digitalRead(A_LED_PIN));
   //digitalWrite(B_LED_PIN, !digitalRead(B_LED_PIN));
   //digitalWrite(C_LED_PIN, !digitalRead(C_LED_PIN));
-  ontime++;
+  dontime++;
   if (ontime > 100000)
   {
      ontime = 1;
@@ -76,13 +88,13 @@ void loop()
   { 
     priority_level = -1;
   }
-  /*(if (Serial.available() > 0)
+  (if (Serial.available() > 0)
       {
         //Serial.flush();
         //digitalWrite(B_LED_PIN, !digitalRead(B_LED_PIN));
         //in_char = Serial.read();
         //Serial.println(in_char);
-      }*/
+      }
   
   switch (priority_level)
   {
@@ -93,13 +105,13 @@ void loop()
       if (in_message_complete == 1)
       {
         digitalWrite(A_LED_PIN, !digitalRead(A_LED_PIN));
-        Serial.println(in_message);
+        Serial2.println(in_message);
         in_message = "";
         in_message_complete = 0;
       }
       //digitalWrite(B_LED_PIN, !digitalRead(B_LED_PIN));
        
-        /*memset(response,'\0',sizeof response);
+        memset(response,'\0',sizeof response);
         digitalWrite(B_LED_PIN,FALSE);
         do
         {
@@ -109,9 +121,9 @@ void loop()
           sprintf(&response[spot],"%c",in_byte);
           spot += 1; 
         }while((Serial.available() > 0) && (in_byte != '\0') && (in_byte != '*'));
-        digitalWrite(B_LED_PIN, FALSE);*/
+        digitalWrite(B_LED_PIN, FALSE);
         //Serial.println(response);
-        /*if (in_char == '$')
+        if (in_char == '$')
         {
           digitalWrite(A_LED_PIN, !digitalRead(A_LED_PIN));
           message_started = 1;
@@ -129,7 +141,7 @@ void loop()
         else
         {
           in_message += (String)'x';
-        }*/
+        }
         
       
       
@@ -137,31 +149,38 @@ void loop()
       break;
     case PRIORITY_SLOW:
       digitalWrite(C_LED_PIN, !digitalRead(C_LED_PIN));
-      //Serial.print("$NAV,123,");
-      //Serial.print(temp++);
-      //Serial.println("*");
+      //Serial2.print("$NAV,123,");
+      //Serial2.print(temp++);
+      //Serial2.println("*");
       if ( temp > 256) { temp = 0;}
       break;
     default:
       break;
   }
+  */
 }
-void serialEvent() {
+void serialEvent2() {
+  //digitalWrite(A_LED_PIN, LED_OFF);
   
-  while (Serial.available()) {
-    digitalWrite(B_LED_PIN, !digitalRead(B_LED_PIN));
-    if (in_message_complete == 0)
-    {  
+  while ((Serial2.available()>0) && (in_message_completed == 0)) {
+    digitalWrite(B_LED_PIN, LED_ON);
       // get the new byte:
-      char inChar = (char)Serial.read(); 
-      Serial.print(inChar);
+      char inChar = (char)Serial2.read(); 
+      //Serial.print(inChar);
       // add it to the inputString:
-      in_message += inChar;
+      if (inChar == '$')
+      {
+         in_message_started = 1;
+      }
+      if (in_message_started == 1)
+      {
+        in_message += inChar;
+      }
       // if the incoming character is a newline, set a flag
       // so the main loop can do something about it:
       if (inChar == '*') {
-        in_message_complete = 1;
+        in_message_completed = 1;
+        in_message_started = 0;
       }
-    } 
   }
 }
