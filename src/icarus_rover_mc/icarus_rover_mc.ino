@@ -17,7 +17,7 @@
 
 //Timing Stuff Definitions
 #define FAST_LOOP 1 //1000 Hz
-#define MEDIUM_LOOP 20 //50 Hz
+#define MEDIUM_LOOP 50 //50 Hz
 #define SLOW_LOOP 1000 //1 Hz
 
 #define PRIORITY_HIGH 0
@@ -43,6 +43,9 @@ int value1 = 0;
 int value2 = 0;
 Servo SteerServo;
 Servo DriveMotor;
+float pos_x = 12.345678f;
+float pos_y = 87.654321f;
+float heading = 189.370245f;
 void setup()
 {
   Serial.begin(BAUD_RATE);
@@ -106,8 +109,8 @@ void loop()
             Serial.print("Got NAV Message: ");
             value1 = getValue(in_message,',',1).toInt();
             value2 = getValue(in_message,',',2).toInt();
-            SteerServo.write(value2);
-            DriveMotor.write(value1);
+            SteerServo.write(value1);
+            DriveMotor.write(value2);
             Serial.print(value1);
             Serial.print(" ");
             Serial.println(value2);
@@ -122,6 +125,16 @@ void loop()
           in_message_completed = 0;
           in_message_started = 0;
       }
+      heading = heading+1.01f;
+      pos_x = pos_x + 1.01;
+      pos_y = pos_y + 1.01;
+      Serial2.print("$POS,");
+      Serial2.print(pos_x,2);
+      Serial2.print(",");
+      Serial2.print(pos_y,2);
+      Serial2.print(",");
+      Serial2.print(heading,2);
+      Serial2.println("*");
             
       
       
