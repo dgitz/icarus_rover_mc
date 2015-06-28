@@ -10,16 +10,24 @@
 #define A_LED_PIN 27
 #define B_LED_PIN 26
 #define C_LED_PIN 25
-
 #define STEER_SERVO 12
 #define DRIVE_MOTOR 11
+#define ARM_INPUT_PIN A0
 
+//Actuator Definitions
+#define STEER_SERVO_CENTER 100
+#define STEER_SERVO_MAXLEFT 130
+#define STEER_SERVO_MAXRIGHT 65
+#define DRIVE_MOTOR_NEUTRAL 92
+#define DRIVE_MOTOR_FULLFORWARD 105
+#define DRIVE_MOTOR_FULLREVERSE 80
+#define ARMED 1
+#define DISARMED 0
 
 //Timing Stuff Definitions
 #define FAST_LOOP 1 //1000 Hz
 #define MEDIUM_LOOP 50 //50 Hz
 #define SLOW_LOOP 1000 //1 Hz
-
 #define PRIORITY_HIGH 0
 #define PRIORITY_MEDIUM 1
 #define PRIORITY_SLOW 2
@@ -38,11 +46,19 @@ int priority_level = -1;
 String in_message;
 int in_message_completed = 0;
 int in_message_started = 0;
-int temp = 0;
-int value1 = 0;
-int value2 = 0;
+
+//Actuator declarations
 Servo SteerServo;
 Servo DriveMotor;
+int armed_state;
+
+
+//Other declarations
+int temp = DRIVE_MOTOR_NEUTRAL;
+int direction = 1;
+int value1 = 0;
+int value2 = 0;
+
 float pos_x = 12.345678f;
 float pos_y = 87.654321f;
 float heading = 189.370245f;
@@ -102,6 +118,33 @@ void loop()
       //digitalWrite(A_LED_PIN, !digitalRead(A_LED_PIN));
       break;
     case PRIORITY_MEDIUM:
+      armed_state = digitalRead(ARM_INPUT_PIN);
+      digitalWrite(A_LED_PIN,!armed_state);
+      if (armed_state == ARMED)
+      {
+        /* Debugging Only, for Servo Calibration
+        if (direction == 1) { temp  +=1;       }
+        if (direction == 0) { temp -= 1;       }
+        if(temp > STEER_SERVO_MAXLEFT)      { direction = 0;   }
+        if(temp < STEER_SERVO_MAXRIGHT)        { direction = 1;   }
+        Serial.println(temp);
+        SteerServo.write(temp);
+        */
+        /*Debugging Only, for Motor Calibration
+        if (direction == 1) { temp  +=1;       }
+        if (direction == 0) { temp -= 1;       }
+        if(temp > DRIVE_MOTOR_FULLFORWARD)      { direction = 0;   }
+        if(temp < DRIVE_MOTOR_FULLREVERSE)        { direction = 1;   }
+        Serial.println(temp);
+        DriveMotor.write(temp);*/
+      }
+      else
+      {  
+        SteerServo.write(STEER_SERVO_CENTER); //Set to Neutral Value
+        DriveMotor.write(DRIVE_MOTOR_NEUTRAL); //Set to Neutral Value
+      }
+      
+      
       if (in_message_completed == 1)
       {
           if (in_message.substring(0,4) == "$NAV")
@@ -109,8 +152,12 @@ void loop()
             Serial.print("Got NAV Message: ");
             value1 = getValue(in_message,',',1).toInt();
             value2 = getValue(in_message,',',2).toInt();
-            SteerServo.write(value1);
-            DriveMotor.write(value2);
+            if (armed_state == ARMED)
+            {
+              SteerServo.write(constrain(value1,STEER_SERVO_MAXRIGHT,STEER_SERVO_MAXLEFT)); //Expects angle, from 0 to 180
+              DriveMotor.write(constrain(value2,DRIVE_MOTOR_FULLREVERSE,DRIVE_MOTOR_FULLFORWARD)); //Expects angle, from 0 to 180
+            }
+            
             Serial.print(value1);
             Serial.print(" ");
             Serial.println(value2);
@@ -134,6 +181,10 @@ void loop()
       Serial2.print(pos_y,2);
       Serial2.print(",");
       Serial2.print(heading,2);
+      Serial2.println("*");
+      
+      Serial2.print("$STA,ARM,");
+      Serial2.print(armed_state);
       Serial2.println("*");
             
       
